@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hestior Automation Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>Hestior Automation</h1>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-card">
+                        <span class="stat-label">Active Jobs</span>
+                        <span class="stat-value" id="active-jobs">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Campaigns</span>
+                        <span class="stat-value" id="active-campaigns">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Completed</span>
+                        <span class="stat-value" id="completed-jobs">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Failed</span>
+                        <span class="stat-value" id="failed-jobs">0</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Control Panel -->
+            <section class="control-panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-magic"></i> AI-Powered Content Creation</h2>
+                    <div class="header-buttons">
+                        <button class="btn btn-secondary" id="create-campaign-btn">
+                            <i class="fas fa-layer-group"></i> Bulk Campaign
+                        </button>
+                        <button class="btn btn-primary" id="create-job-btn">
+                            <i class="fas fa-plus"></i> Single Article
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="quick-action" id="quick-tech-article">
+                        <i class="fas fa-microchip"></i>
+                        <span>Tech Article</span>
+                    </button>
+                    <button class="quick-action" id="quick-lifestyle-article">
+                        <i class="fas fa-heart"></i>
+                        <span>Lifestyle</span>
+                    </button>
+                    <button class="quick-action" id="quick-business-article">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Business</span>
+                    </button>
+                    <button class="quick-action" id="quick-custom-article">
+                        <i class="fas fa-edit"></i>
+                        <span>Custom</span>
+                    </button>
+                </div>
+                
+                <!-- Info Box -->
+                <div class="info-box">
+                    <div class="info-content">
+                        <h3><i class="fas fa-lightbulb"></i> Hands-Free Experience</h3>
+                        <p>Choose between single articles or bulk campaigns:</p>
+                        <ul>
+                            <li>✨ <strong>Single Article:</strong> Generate one article immediately</li>
+                            <li>🚀 <strong>Bulk Campaign:</strong> Add multiple prompts and schedule automatic publishing</li>
+                            <li>⏰ <strong>Frequency Control:</strong> Set daily, hourly, or custom schedules</li>
+                            <li>🔄 <strong>Loop Mode:</strong> Automatically cycle through prompts indefinitely</li>
+                            <li>📊 <strong>Campaign Analytics:</strong> Track progress and performance</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Campaigns Section -->
+            <section class="campaigns-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-layer-group"></i> Active Campaigns</h2>
+                    <div class="campaign-controls">
+                        <button class="btn btn-secondary" id="refresh-campaigns">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="campaigns-list" id="campaigns-list">
+                    <!-- Campaigns will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Job Queue -->
+            <section class="job-queue">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Automation Queue</h2>
+                    <div class="queue-controls">
+                        <button class="btn btn-secondary" id="clear-completed">
+                            <i class="fas fa-trash"></i> Clear Completed
+                        </button>
+                        <button class="btn btn-secondary" id="refresh-queue">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="job-list" id="job-list">
+                    <!-- Jobs will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- Live Progress -->
+            <section class="live-progress" id="live-progress" style="display: none;">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-line"></i> Live Progress</h2>
+                </div>
+                <div class="progress-container" id="progress-container">
+                    <!-- Live progress will be shown here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal for Creating Single Jobs -->
+    <div class="modal" id="create-job-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-magic"></i> Create AI-Powered Article</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            
+            <form id="job-form" class="job-form">
+                <div class="form-group">
+                    <label for="content-prompt">What would you like to write about?</label>
+                    <textarea id="content-prompt" name="contentPrompt" rows="6" 
+                              placeholder="Describe your article idea... For example:&#10;&#10;• Write about the latest AI trends in 2024&#10;• Create a guide on sustainable living practices&#10;• Discuss the future of remote work&#10;• Explain blockchain technology for beginners&#10;&#10;The AI will automatically generate the title, tags, category, and relevant images!" required></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="publish-delay">Publish Delay (minutes)</label>
+                        <input type="number" id="publish-delay" name="publishDelay" value="5" min="1" max="1440" />
+                        <small>Time to wait before publishing (gives you time to review)</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="schedule">Schedule (optional)</label>
+                        <input type="text" id="schedule" name="schedule" placeholder="0 9 * * 1 (every Monday at 9 AM)" />
+                        <small>Use cron format for recurring posts</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-job">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-magic"></i> Create Article
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Creating Bulk Campaigns -->
+    <div class="modal" id="create-campaign-modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3><i class="fas fa-layer-group"></i> Create Bulk Campaign</h3>
+                <button class="close-btn" id="close-campaign-modal">&times;</button>
+            </div>
+            
+            <form id="campaign-form" class="campaign-form">
+                <div class="form-group">
+                    <label for="campaign-name">Campaign Name</label>
+                    <input type="text" id="campaign-name" name="name" placeholder="e.g., Tech Articles Q1 2024" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="campaign-prompts">Article Prompts (one per line)</label>
+                    <textarea id="campaign-prompts" name="prompts" rows="12" 
+                              placeholder="Enter your article prompts, one per line:&#10;&#10;Write about AI trends in 2024&#10;Create a guide on sustainable living&#10;Discuss remote work best practices&#10;Explain blockchain for beginners&#10;Review the latest smartphone technology&#10;Write about healthy meal planning&#10;Discuss cybersecurity tips for businesses&#10;Create a guide to social media marketing&#10;Write about renewable energy solutions&#10;Discuss the future of electric vehicles" required></textarea>
+                    <small>Each line will become a separate article prompt</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="campaign-frequency">Publishing Frequency</label>
+                        <select id="campaign-frequency" name="frequency" required>
+                            <option value="daily">Daily</option>
+                            <option value="hourly">Hourly</option>
+                            <option value="custom">Custom (Cron)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="articles-per-day-group">
+                        <label for="articles-per-day">Articles Per Day</label>
+                        <input type="number" id="articles-per-day" name="articlesPerDay" value="1" min="1" max="24" />
+                        <small>How many articles to publish daily</small>
+                    </div>
+                </div>
+
+                <div class="form-group" id="custom-cron-group" style="display: none;">
+                    <label for="custom-cron">Custom Cron Expression</label>
+                    <input type="text" id="custom-cron" name="customCron" placeholder="0 9,15 * * * (9 AM and 3 PM daily)" />
+                    <small>Use cron format for custom scheduling</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="campaign-publish-delay">Publish Delay (minutes)</label>
+                        <input type="number" id="campaign-publish-delay" name="publishDelay" value="5" min="1" max="1440" />
+                        <small>Time to wait before publishing each article</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="campaign-looping">
+                            <input type="checkbox" id="campaign-looping" name="isLooping" checked />
+                            Loop prompts indefinitely
+                        </label>
+                        <small>Restart from first prompt when all are used</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-campaign">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-layer-group"></i> Create Campaign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Campaign Details Modal -->
+    <div class="modal" id="campaign-details-modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Campaign Details</h3>
+                <button class="close-btn" id="close-campaign-details-modal">&times;</button>
+            </div>
+            <div class="campaign-details-content" id="campaign-details-content">
+                <!-- Campaign details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Job Details Modal -->
+    <div class="modal" id="job-details-modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Job Details</h3>
+                <button class="close-btn" id="close-details-modal">&times;</button>
+            </div>
+            <div class="job-details-content" id="job-details-content">
+                <!-- Job details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
