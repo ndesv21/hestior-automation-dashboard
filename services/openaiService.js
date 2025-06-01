@@ -12,7 +12,17 @@ class OpenAIService {
         messages: [
           {
             role: "system",
-            content: `You are a professional content writer for hestior.com. Write engaging, SEO-optimized articles that are informative and well-structured. Use proper HTML formatting with headings, paragraphs, and lists where appropriate. The content should be ready for WordPress publishing. Write comprehensive articles that are at least 800-1200 words.`
+            content: `You are a professional content writer for hestior.com. Write engaging, SEO-optimized articles that are informative and well-structured. 
+
+Format the content using WordPress-compatible HTML elements:
+- Use <h1>, <h2>, <h3> for headings
+- Use <p> for paragraphs  
+- Use <ul>, <ol>, <li> for lists
+- Use <strong>, <em> for emphasis
+
+DO NOT wrap the content in <html>, <head>, <body> or <article> tags. Return only the article content that can be directly inserted into WordPress.
+
+Write comprehensive articles that are at least 800-1200 words.`
           },
           {
             role: "user",
@@ -23,7 +33,19 @@ class OpenAIService {
         temperature: 0.7,
       });
 
-      return completion.choices[0].message.content;
+      let content = completion.choices[0].message.content;
+      
+      // Clean up any unwanted HTML wrapper tags
+      content = content.replace(/<\/?html[^>]*>/gi, '');
+      content = content.replace(/<\/?head[^>]*>/gi, '');
+      content = content.replace(/<\/?body[^>]*>/gi, '');
+      content = content.replace(/<\/?article[^>]*>/gi, '');
+      content = content.replace(/```html\n?|\n?```/g, '');
+      
+      // Trim whitespace
+      content = content.trim();
+      
+      return content;
     } catch (error) {
       console.error('Error generating article:', error);
       throw new Error(`Failed to generate article: ${error.message}`);
