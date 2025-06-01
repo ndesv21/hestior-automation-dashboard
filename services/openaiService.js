@@ -86,14 +86,14 @@ class OpenAIService {
     }
   }
 
-  async generateImage(prompt, size = "1536x1024") {
+  async generateImage(prompt, size = "1024x1024") {
     try {
       const response = await openai.images.generate({
-        model: "gpt-image-1",
+        model: "dall-e-3",
         prompt: `Create a high-quality, professional image for a blog article: ${prompt}. The image should be suitable for web publishing and visually appealing.`,
         n: 1,
         size: size,
-        quality: "auto",
+        quality: "standard",
       });
 
       return response.data[0].url;
