@@ -93,7 +93,7 @@ class OpenAIService {
         prompt: `Create a high-quality, professional image for a blog article: ${prompt}. The image should be suitable for web publishing and visually appealing.`,
         n: 1,
         size: size,
-        quality: "standard",
+        quality: "auto",
       });
 
       return response.data[0].url;
