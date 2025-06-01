@@ -86,7 +86,7 @@ class OpenAIService {
     }
   }
 
-  async generateImage(prompt, size = "1024x1024") {
+  async generateImage(prompt, size = "1536x1024") {
     try {
       const response = await openai.images.generate({
         model: "gpt-image-1",
