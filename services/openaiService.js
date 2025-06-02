@@ -115,45 +115,69 @@ Write comprehensive articles that are at least 800-1200 words.`
         prompt: `Create a high-quality, professional image for a blog article: ${prompt}. The image should be suitable for web publishing and visually appealing.`,
         n: 1,
         size: size,
-        quality: "medium",
-        response_format: "b64_json" // Explicitly request base64 format
+        quality: "medium"
+        // Note: gpt-image-1 doesn't accept response_format parameter
       });
 
-      console.log('Image generation response keys:', Object.keys(response));
-      console.log('Response data structure:', response.data ? response.data.map(item => Object.keys(item)) : 'No data array');
+      console.log('=== GPT-IMAGE-1 RESPONSE ANALYSIS ===');
+      console.log('Response keys:', Object.keys(response));
+      console.log('Response data array length:', response.data ? response.data.length : 'No data array');
       
-      // gpt-image-1 returns base64 data differently than DALL-E 3
+      if (response.data && response.data[0]) {
+        const firstItem = response.data[0];
+        console.log('First item keys:', Object.keys(firstItem));
+        console.log('First item:', JSON.stringify(firstItem, null, 2));
+      }
+      
+      // Check if response has other properties that might contain image data
+      console.log('Full response structure:');
+      console.log(JSON.stringify(response, null, 2));
+      console.log('=== END ANALYSIS ===');
+      
+      // gpt-image-1 returns base64 data in a different structure
       let imageData = null;
       
       if (response.data && response.data[0]) {
         const firstItem = response.data[0];
-        console.log('First data item keys:', Object.keys(firstItem));
         
-        // Check all possible locations for base64 data
+        // Check all possible locations for base64 data in gpt-image-1
         imageData = firstItem.b64_json || 
                    firstItem.base64 || 
                    firstItem.data || 
                    firstItem.image || 
                    firstItem.content ||
-                   firstItem.url; // Sometimes it might still be a URL
+                   firstItem.url;
         
-        // If we found base64 data, convert it to data URL format
+        // If we found raw base64 data, convert it to data URL format
         if (imageData && !imageData.startsWith('data:image') && !imageData.startsWith('http')) {
-          console.log('Converting base64 data to data URL...');
+          console.log('Converting raw base64 to data URL...');
           imageData = `data:image/png;base64,${imageData}`;
         }
       }
       
-      // If no image data found, log the full response for debugging
+      // Check if image data is at the root level of response
       if (!imageData) {
-        console.log('=== FULL RESPONSE FOR DEBUGGING ===');
-        console.log(JSON.stringify(response, null, 2));
-        console.log('=== END RESPONSE ===');
+        imageData = response.b64_json || 
+                   response.base64 || 
+                   response.data || 
+                   response.image || 
+                   response.content ||
+                   response.url;
+                   
+        if (imageData && !imageData.startsWith('data:image') && !imageData.startsWith('http')) {
+          console.log('Converting root level base64 to data URL...');
+          imageData = `data:image/png;base64,${imageData}`;
+        }
+      }
+      
+      if (!imageData) {
+        console.error('❌ No image data found in gpt-image-1 response');
         throw new Error('No image data found in gpt-image-1 response');
       }
       
-      console.log('Successfully extracted image data, length:', imageData.length);
-      console.log('Image data type:', imageData.startsWith('data:image') ? 'base64 data URL' : 'URL');
+      console.log('✅ Successfully extracted image data');
+      console.log('Image data type:', imageData.startsWith('data:image') ? 'Base64 Data URL' : 'URL');
+      console.log('Image data length:', imageData.length);
       
       return imageData;
     } catch (error) {
