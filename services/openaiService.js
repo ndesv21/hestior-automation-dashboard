@@ -116,36 +116,46 @@ Write comprehensive articles that are at least 800-1200 words.`
         n: 1,
         size: size,
         quality: "medium",
+        response_format: "b64_json" // Explicitly request base64 format
       });
 
-      console.log('Image generation response:', JSON.stringify(response, null, 2));
+      console.log('Image generation response keys:', Object.keys(response));
+      console.log('Response data structure:', response.data ? response.data.map(item => Object.keys(item)) : 'No data array');
       
-      // Handle different possible response formats for gpt-image-1
-      let imageUrl = null;
+      // gpt-image-1 returns base64 data differently than DALL-E 3
+      let imageData = null;
       
       if (response.data && response.data[0]) {
-        // Try different possible URL locations
-        imageUrl = response.data[0].url || 
-                  response.data[0].image_url || 
-                  response.data[0].revised_prompt_url ||
-                  response.data[0].b64_json;
+        const firstItem = response.data[0];
+        console.log('First data item keys:', Object.keys(firstItem));
+        
+        // Check all possible locations for base64 data
+        imageData = firstItem.b64_json || 
+                   firstItem.base64 || 
+                   firstItem.data || 
+                   firstItem.image || 
+                   firstItem.content ||
+                   firstItem.url; // Sometimes it might still be a URL
+        
+        // If we found base64 data, convert it to data URL format
+        if (imageData && !imageData.startsWith('data:image') && !imageData.startsWith('http')) {
+          console.log('Converting base64 data to data URL...');
+          imageData = `data:image/png;base64,${imageData}`;
+        }
       }
       
-      // If we got base64 data, we need to handle it differently
-      if (imageUrl && imageUrl.startsWith('data:image')) {
-        console.log('Received base64 image data, converting...');
-        return imageUrl; // Return base64 for now, we'll handle conversion in WordPress service
+      // If no image data found, log the full response for debugging
+      if (!imageData) {
+        console.log('=== FULL RESPONSE FOR DEBUGGING ===');
+        console.log(JSON.stringify(response, null, 2));
+        console.log('=== END RESPONSE ===');
+        throw new Error('No image data found in gpt-image-1 response');
       }
       
-      // Validate URL format
-      if (!imageUrl || !this.isValidUrl(imageUrl)) {
-        console.error('Invalid or missing image URL:', imageUrl);
-        console.error('Full response:', JSON.stringify(response, null, 2));
-        throw new Error('Invalid image URL received from API');
-      }
+      console.log('Successfully extracted image data, length:', imageData.length);
+      console.log('Image data type:', imageData.startsWith('data:image') ? 'base64 data URL' : 'URL');
       
-      console.log('Generated image URL:', imageUrl);
-      return imageUrl;
+      return imageData;
     } catch (error) {
       console.error('Error generating image:', error);
       throw new Error(`Failed to generate image: ${error.message}`);
