@@ -37,7 +37,26 @@ const elements = {
     // Campaign form elements
     campaignFrequency: document.getElementById('campaign-frequency'),
     articlesPerDayGroup: document.getElementById('articles-per-day-group'),
-    customCronGroup: document.getElementById('custom-cron-group')
+    customCronGroup: document.getElementById('custom-cron-group'),
+
+    // Page generation elements
+    createPageBtn: document.getElementById('create-page-btn'),
+    createPageModal: document.getElementById('create-page-modal'),
+    closePageModal: document.getElementById('close-page-modal'),
+    cancelPage: document.getElementById('cancel-page'),
+    pageForm: document.getElementById('page-form'),
+    parentPage: document.getElementById('parent-page'),
+    
+    // Page campaign elements
+    createPageCampaignBtn: document.getElementById('create-page-campaign-btn'),
+    createPageCampaignModal: document.getElementById('create-page-campaign-modal'),
+    closePageCampaignModal: document.getElementById('close-page-campaign-modal'),
+    cancelPageCampaign: document.getElementById('cancel-page-campaign'),
+    pageCampaignForm: document.getElementById('page-campaign-form'),
+    pageCampaignFrequency: document.getElementById('page-campaign-frequency'),
+    pagesPerDayGroup: document.getElementById('pages-per-day-group'),
+    pageCustomCronGroup: document.getElementById('page-custom-cron-group'),
+    pageParentPage: document.getElementById('page-parent-page')
 };
 
 // Quick action buttons
@@ -73,12 +92,31 @@ function initializeEventListeners() {
     elements.cancelCampaign.addEventListener('click', () => hideModal(elements.createCampaignModal));
     elements.closeCampaignDetailsModal.addEventListener('click', () => hideModal(elements.campaignDetailsModal));
     
+    // Page modal controls
+    elements.createPageBtn.addEventListener('click', () => {
+        loadParentPages();
+        showModal(elements.createPageModal);
+    });
+    elements.closePageModal.addEventListener('click', () => hideModal(elements.createPageModal));
+    elements.cancelPage.addEventListener('click', () => hideModal(elements.createPageModal));
+    
+    // Page campaign modal controls
+    elements.createPageCampaignBtn.addEventListener('click', () => {
+        loadParentPages();
+        showModal(elements.createPageCampaignModal);
+    });
+    elements.closePageCampaignModal.addEventListener('click', () => hideModal(elements.createPageCampaignModal));
+    elements.cancelPageCampaign.addEventListener('click', () => hideModal(elements.createPageCampaignModal));
+    
     // Form submissions
     elements.jobForm.addEventListener('submit', handleJobSubmission);
     elements.campaignForm.addEventListener('submit', handleCampaignSubmission);
+    elements.pageForm.addEventListener('submit', handlePageSubmission);
+    elements.pageCampaignForm.addEventListener('submit', handlePageCampaignSubmission);
     
     // Campaign frequency change handler
     elements.campaignFrequency.addEventListener('change', handleFrequencyChange);
+    elements.pageCampaignFrequency.addEventListener('change', handlePageFrequencyChange);
     
     // Quick actions
     quickActions.tech.addEventListener('click', () => createQuickJob('tech'));
@@ -229,6 +267,77 @@ socket.on('campaign-job-completed', ({ campaignId, jobId, promptIndex }) => {
     if (campaign) {
         updateCampaignInList(campaign);
         showToast('Campaign Article', `Article ${promptIndex + 1} published from campaign`, 'success');
+    }
+});
+
+// Page Socket Events
+socket.on('page-job-created', (job) => {
+    jobs.set(job.id, job);
+    addJobToList(job);
+    updateStats();
+    showToast('Page Job Created', 'AI page generation started!', 'success');
+});
+
+socket.on('page-job-started', (job) => {
+    jobs.set(job.id, job);
+    activeJobs.add(job.id);
+    updateJobInList(job);
+    showLiveProgress(job);
+    updateStats();
+    showToast('Page Started', 'AI is now creating your page', 'info');
+});
+
+socket.on('page-metadata-extracted', ({ jobId, metadata }) => {
+    const job = jobs.get(jobId);
+    if (job) {
+        Object.assign(job, metadata);
+        updateJobInList(job);
+        updateLiveProgress(job);
+        showToast('Page Metadata Ready', `Page: "${metadata.title}"`, 'info');
+    }
+});
+
+socket.on('page-image-generated', ({ jobId, type, index, imageUrl, prompt }) => {
+    const job = jobs.get(jobId);
+    if (job) {
+        if (type === 'featured') {
+            showToast('Page Featured Image Ready', 'Featured image generated', 'info');
+        } else {
+            showToast('Page Image Ready', `Page image ${index + 1} generated`, 'info');
+        }
+    }
+});
+
+socket.on('page-job-completed', (job) => {
+    jobs.set(job.id, job);
+    activeJobs.delete(job.id);
+    updateJobInList(job);
+    hideLiveProgress(job.id);
+    updateStats();
+    showToast('Page Published!', `"${job.title}" page is now live!`, 'success');
+});
+
+socket.on('page-job-failed', (job) => {
+    jobs.set(job.id, job);
+    activeJobs.delete(job.id);
+    updateJobInList(job);
+    hideLiveProgress(job.id);
+    updateStats();
+    showToast('Page Job Failed', `Error: ${job.error}`, 'error');
+});
+
+socket.on('page-campaign-created', ({ campaign }) => {
+    campaigns.set(campaign.id, campaign);
+    addCampaignToList(campaign);
+    updateStats();
+    showToast('Page Campaign Created', `"${campaign.name}" page campaign is now active!`, 'success');
+});
+
+socket.on('page-campaign-job-completed', ({ campaignId, jobId, promptIndex }) => {
+    const campaign = campaigns.get(campaignId);
+    if (campaign) {
+        updateCampaignInList(campaign);
+        showToast('Campaign Page', `Page ${promptIndex + 1} published from campaign`, 'success');
     }
 });
 
@@ -432,6 +541,137 @@ async function getJobDetails(jobId) {
     } catch (error) {
         console.error('Error getting job details:', error);
         return null;
+    }
+}
+
+// PAGE API FUNCTIONS
+
+async function loadParentPages() {
+    try {
+        const response = await fetch('/api/automation/parent-pages');
+        const parentPages = await response.json();
+        
+        // Update both parent page selects
+        [elements.parentPage, elements.pageParentPage].forEach(select => {
+            if (select) {
+                // Clear existing options except the first one
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+                
+                parentPages.forEach(page => {
+                    const option = document.createElement('option');
+                    option.value = page.id;
+                    option.textContent = page.title;
+                    select.appendChild(option);
+                });
+            }
+        });
+    } catch (error) {
+        console.error('Error loading parent pages:', error);
+        showToast('Error', 'Failed to load parent pages', 'error');
+    }
+}
+
+async function createPage(pageData) {
+    try {
+        const response = await fetch('/api/automation/create-page', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(pageData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideModal(elements.createPageModal);
+            elements.pageForm.reset();
+        } else {
+            throw new Error(result.error || 'Failed to create page');
+        }
+    } catch (error) {
+        console.error('Error creating page:', error);
+        showToast('Error', `Failed to create page: ${error.message}`, 'error');
+    }
+}
+
+async function createPageCampaign(campaignData) {
+    try {
+        const response = await fetch('/api/automation/page-campaigns', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(campaignData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            hideModal(elements.createPageCampaignModal);
+            elements.pageCampaignForm.reset();
+            handlePageFrequencyChange(); // Reset form visibility
+        } else {
+            throw new Error(result.error || 'Failed to create page campaign');
+        }
+    } catch (error) {
+        console.error('Error creating page campaign:', error);
+        showToast('Error', `Failed to create page campaign: ${error.message}`, 'error');
+    }
+}
+
+function handlePageSubmission(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const pageData = {
+        contentPrompt: formData.get('contentPrompt'),
+        parentPageId: formData.get('parentPageId') || null,
+        publishDelay: parseInt(formData.get('publishDelay')) * 60000 // Convert to milliseconds
+    };
+    
+    createPage(pageData);
+}
+
+function handlePageCampaignSubmission(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const prompts = formData.get('prompts')
+        .split('\n')
+        .map(prompt => prompt.trim())
+        .filter(prompt => prompt.length > 0);
+    
+    if (prompts.length === 0) {
+        showToast('Error', 'Please enter at least one page prompt', 'error');
+        return;
+    }
+    
+    const campaignData = {
+        name: formData.get('name'),
+        prompts: prompts,
+        frequency: formData.get('frequency'),
+        pagesPerDay: parseInt(formData.get('pagesPerDay')) || 1,
+        customCron: formData.get('customCron') || null,
+        publishDelay: 0, // Pages typically publish immediately
+        isLooping: formData.get('isLooping') === 'on',
+        parentPageId: formData.get('parentPageId') || null
+    };
+    
+    createPageCampaign(campaignData);
+}
+
+function handlePageFrequencyChange() {
+    const frequency = elements.pageCampaignFrequency.value;
+    
+    if (frequency === 'custom') {
+        elements.pageCustomCronGroup.style.display = 'block';
+        elements.pagesPerDayGroup.style.display = 'none';
+    } else {
+        elements.pageCustomCronGroup.style.display = 'none';
+        elements.pagesPerDayGroup.style.display = frequency === 'daily' ? 'block' : 'none';
     }
 }
 
@@ -729,6 +969,7 @@ async function showJobDetails(jobId) {
             ` : ''}
             
             ${job.wordpressPostId ? `<p><strong>WordPress Post ID:</strong> ${job.wordpressPostId}</p>` : ''}
+            ${job.wordpressPageId ? `<p><strong>WordPress Page ID:</strong> ${job.wordpressPageId}</p>` : ''}
             ${job.error ? `<p style="color: #e53e3e;"><strong>Error:</strong> ${job.error}</p>` : ''}
         </div>
     `;
@@ -815,7 +1056,7 @@ function removeCampaignFromList(campaignId) {
 
 function createCampaignElement(campaign) {
     const div = document.createElement('div');
-    div.className = 'campaign-item';
+    div.className = `campaign-item ${campaign.type || 'article'}`;
     div.setAttribute('data-campaign-id', campaign.id);
     
     const statusClass = `status-${campaign.status.toLowerCase()}`;
@@ -827,13 +1068,15 @@ function createCampaignElement(campaign) {
     const progressPercentage = campaign.totalPrompts > 0 ? 
         Math.round((campaign.currentPromptIndex || 0) / campaign.totalPrompts * 100) : 0;
     
+    const itemLabel = campaign.type === 'page' ? 'pages' : 'articles';
+    
     div.innerHTML = `
         <div class="campaign-header">
             <div>
                 <div class="campaign-title">${campaign.name}</div>
                 <div class="campaign-meta">
                     <span><i class="fas fa-clock"></i> ${frequencyText}</span>
-                    <span><i class="fas fa-list"></i> ${campaign.totalArticlesGenerated || 0} articles generated</span>
+                    <span><i class="fas fa-list"></i> ${campaign.totalArticlesGenerated || 0} ${itemLabel} generated</span>
                     ${campaign.isLooping ? '<span><i class="fas fa-sync"></i> Looping</span>' : ''}
                 </div>
             </div>
@@ -882,16 +1125,19 @@ async function showCampaignDetails(campaignId) {
     }
     
     const { campaign, promptPool, stats } = campaignDetails;
+    const itemLabel = campaign.type === 'page' ? 'pages' : 'articles';
+    const itemLabelCapitalized = campaign.type === 'page' ? 'Pages' : 'Articles';
     
     elements.campaignDetailsContent.innerHTML = `
         <div class="campaign-details">
-            <h4>${campaign.name}</h4>
+            <h4>${campaign.name} ${campaign.type === 'page' ? '(Page Campaign)' : '(Article Campaign)'}</h4>
             <div class="details-grid">
                 <div class="detail-section">
                     <h5>Campaign Settings</h5>
+                    <p><strong>Type:</strong> ${itemLabelCapitalized}</p>
                     <p><strong>Status:</strong> ${campaign.status}</p>
                     <p><strong>Frequency:</strong> ${campaign.frequency === 'custom' ? 'Custom' : 
-                                                   campaign.frequency === 'daily' ? `${campaign.articlesPerDay} articles per day` : 
+                                                   campaign.frequency === 'daily' ? `${campaign.articlesPerDay} ${itemLabel} per day` : 
                                                    'Hourly'}</p>
                     ${campaign.customCron ? `<p><strong>Cron Expression:</strong> ${campaign.customCron}</p>` : ''}
                     <p><strong>Publish Delay:</strong> ${campaign.publishDelay / 60000} minutes</p>
@@ -904,7 +1150,7 @@ async function showCampaignDetails(campaignId) {
                     <h5>Statistics</h5>
                     <p><strong>Total Prompts:</strong> ${promptPool.totalPrompts}</p>
                     <p><strong>Current Position:</strong> ${campaign.currentPromptIndex || 0}</p>
-                    <p><strong>Articles Generated:</strong> ${campaign.totalArticlesGenerated || 0}</p>
+                    <p><strong>${itemLabelCapitalized} Generated:</strong> ${campaign.totalArticlesGenerated || 0}</p>
                     ${stats ? `
                         <p><strong>Successful Executions:</strong> ${stats.successfulExecutions || 0}</p>
                         <p><strong>Failed Executions:</strong> ${stats.failedExecutions || 0}</p>
@@ -932,4 +1178,4 @@ async function showCampaignDetails(campaignId) {
     `;
     
     showModal(elements.campaignDetailsModal);
-} 
+}

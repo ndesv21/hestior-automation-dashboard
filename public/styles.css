@@ -913,4 +913,54 @@ section {
     color: #718096;
     margin-bottom: 0.5rem;
     line-height: 1.4;
+}
+
+.btn-accent {
+    background: linear-gradient(135deg, #805ad5 0%, #9f7aea 100%);
+    color: white;
+}
+
+.btn-accent:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(128, 90, 213, 0.4);
+}
+
+/* Page-specific form styles */
+.page-form,
+.page-campaign-form {
+    padding: 1.5rem;
+}
+
+.page-form .form-group,
+.page-campaign-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+/* Page job styling */
+.job-item.page {
+    border-left: 4px solid #805ad5;
+}
+
+.job-item.page .job-title::before {
+    content: "📄 ";
+    margin-right: 0.5rem;
+}
+
+/* Campaign type indicators */
+.campaign-item.page {
+    border-left: 4px solid #805ad5;
+}
+
+.campaign-item.page .campaign-title::before {
+    content: "📄 ";
+    margin-right: 0.5rem;
+}
+
+.campaign-item.article {
+    border-left: 4px solid #667eea;
+}
+
+.campaign-item.article .campaign-title::before {
+    content: "📝 ";
+    margin-right: 0.5rem;
 } 

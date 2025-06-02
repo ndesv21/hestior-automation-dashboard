@@ -325,6 +325,176 @@ Write comprehensive articles that are at least 800-1200 words.`
       throw new Error(`Failed to generate image prompts: ${error.message}`);
     }
   }
+
+  // ================================
+  // PAGE GENERATION METHODS
+  // ================================
+
+  async generatePage(prompt) {
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a professional web content writer specializing in WordPress page creation. Write structured, comprehensive page content that is perfect for static pages like comparisons, FAQs, features, landing pages, etc.
+
+Format the content using WordPress-compatible HTML elements:
+- Use <h1> for the main page title (only one)
+- Use <h2>, <h3>, <h4> for section headings
+- Use <p> for paragraphs
+- Use <ul>, <ol>, <li> for lists  
+- Use <table>, <tr>, <td>, <th> for comparison tables
+- Use <div class="..."> for special sections
+- Use <strong>, <em> for emphasis
+- Use <blockquote> for quotes or highlights
+
+DO NOT wrap content in <html>, <head>, <body> tags. Return only the page content.
+Make the content comprehensive, well-structured, and suitable for a professional WordPress page.
+Include clear sections, helpful information, and actionable content.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.7,
+      });
+
+      let content = completion.choices[0].message.content;
+      
+      // Clean up any unwanted HTML wrapper tags
+      content = content.replace(/<\/?html[^>]*>/gi, '');
+      content = content.replace(/<\/?head[^>]*>/gi, '');
+      content = content.replace(/<\/?body[^>]*>/gi, '');
+      content = content.replace(/```html\n?|\n?```/g, '');
+      
+      // Trim whitespace
+      content = content.trim();
+      
+      return content;
+    } catch (error) {
+      console.error('Error generating page:', error);
+      throw new Error(`Failed to generate page: ${error.message}`);
+    }
+  }
+
+  async extractPageMetadata(content) {
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `Analyze the given page content and extract metadata. Return a JSON object with:
+            - title: SEO-friendly page title (under 60 characters)
+            - slug: URL-friendly slug (lowercase, hyphens)
+            - metaDescription: Page meta description (under 160 characters)
+            - pageType: Type of page (comparison, faq, features, landing, about, contact, etc.)
+            - imagePrompts: Array of 1-2 relevant image prompts for the page
+            - featuredImagePrompt: One main image prompt for the featured image
+            
+            Make sure image prompts are specific and relevant to the page content. Return only valid JSON.`
+          },
+          {
+            role: "user",
+            content: `Extract metadata from this page content:\n\n${content}`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3,
+      });
+
+      const response = completion.choices[0].message.content;
+      
+      // Clean up the response to ensure it's valid JSON
+      const cleanedResponse = response.replace(/```json\n?|\n?```/g, '').trim();
+      
+      try {
+        return JSON.parse(cleanedResponse);
+      } catch (parseError) {
+        console.error('Failed to parse page metadata JSON:', cleanedResponse);
+        // Return fallback metadata
+        return {
+          title: "Generated Page",
+          slug: "generated-page",
+          metaDescription: "A professionally generated WordPress page.",
+          pageType: "general",
+          imagePrompts: ["Professional page illustration"],
+          featuredImagePrompt: "Professional WordPress page featured image"
+        };
+      }
+    } catch (error) {
+      console.error('Error extracting page metadata:', error);
+      // Return fallback metadata
+      return {
+        title: "Generated Page",
+        slug: "generated-page", 
+        metaDescription: "A professionally generated WordPress page.",
+        pageType: "general",
+        imagePrompts: ["Professional page illustration"],
+        featuredImagePrompt: "Professional WordPress page featured image"
+      };
+    }
+  }
+
+  async findPageImagePlacement(content, imageCount) {
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `Analyze the page content and suggest where to place ${imageCount} images. Return a JSON array of objects with:
+            - position: section number (0-based) where image should be inserted
+            - context: brief description of what the image should show based on surrounding content
+            - size: suggested size (full-width, half-width, thumbnail)
+            
+            Consider page structure and content flow. Return only valid JSON array.`
+          },
+          {
+            role: "user",
+            content: `Find optimal image placement for ${imageCount} images in this page:\n\n${content}`
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.3,
+      });
+
+      const response = completion.choices[0].message.content;
+      const cleanedResponse = response.replace(/```json\n?|\n?```/g, '').trim();
+      
+      try {
+        return JSON.parse(cleanedResponse);
+      } catch (parseError) {
+        // Fallback: distribute images evenly
+        const sections = content.split(/<h[2-4][^>]*>/i).length;
+        const positions = [];
+        for (let i = 0; i < imageCount; i++) {
+          positions.push({
+            position: Math.floor((sections / (imageCount + 1)) * (i + 1)),
+            context: `Image ${i + 1} for page content`,
+            size: "full-width"
+          });
+        }
+        return positions;
+      }
+    } catch (error) {
+      console.error('Error finding page image placement:', error);
+      // Fallback: distribute images evenly
+      const sections = content.split(/<h[2-4][^>]*>/i).length;
+      const positions = [];
+      for (let i = 0; i < imageCount; i++) {
+        positions.push({
+          position: Math.floor((sections / (imageCount + 1)) * (i + 1)),
+          context: `Image ${i + 1} for page content`,
+          size: "full-width"
+        });
+      }
+      return positions;
+    }
+  }
 }
 
 module.exports = new OpenAIService(); 

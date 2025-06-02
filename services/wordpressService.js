@@ -250,6 +250,100 @@ class WordPressService {
       return false;
     }
   }
+
+  // ================================
+  // PAGE CREATION METHODS
+  // ================================
+
+  async createPage(pageData) {
+    try {
+      const { title, content, status = 'publish', parentId = null, featuredImageId = null } = pageData;
+      
+      const pagePayload = {
+        title: title,
+        content: content,
+        status: status,
+        meta: {
+          _automation_generated: true,
+          _generation_timestamp: new Date().toISOString(),
+          _content_type: 'page'
+        }
+      };
+
+      // Add parent page if specified
+      if (parentId) {
+        pagePayload.parent = parentId;
+      }
+
+      // Add featured image if provided
+      if (featuredImageId) {
+        pagePayload.featured_media = featuredImageId;
+      }
+
+      const response = await this.api.post('/pages', pagePayload);
+
+      console.log(`✅ WordPress page created: ${response.data.id}`);
+      return response.data.id;
+    } catch (error) {
+      console.error('Error creating WordPress page:', error.response?.data || error.message);
+      throw new Error(`Failed to create WordPress page: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async publishPage(pageId) {
+    try {
+      const response = await this.api.post(`/pages/${pageId}`, {
+        status: 'publish'
+      });
+
+      console.log(`🚀 WordPress page published: ${pageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error publishing WordPress page:', error.response?.data || error.message);
+      throw new Error(`Failed to publish WordPress page: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async updatePage(pageId, updates) {
+    try {
+      const response = await this.api.post(`/pages/${pageId}`, updates);
+      console.log(`📝 WordPress page updated: ${pageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating WordPress page:', error.response?.data || error.message);
+      throw new Error(`Failed to update WordPress page: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async getPage(pageId) {
+    try {
+      const response = await this.api.get(`/pages/${pageId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting WordPress page:', error.response?.data || error.message);
+      throw new Error(`Failed to get WordPress page: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  async getParentPages() {
+    try {
+      const response = await this.api.get('/pages', {
+        params: { 
+          per_page: 100,
+          parent: 0, // Only get top-level pages
+          status: 'publish'
+        }
+      });
+      return response.data.map(page => ({
+        id: page.id,
+        title: page.title.rendered,
+        slug: page.slug
+      }));
+    } catch (error) {
+      console.error('Error getting parent pages:', error.response?.data || error.message);
+      return [];
+    }
+  }
 }
 
 module.exports = new WordPressService(); 

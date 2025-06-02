@@ -51,6 +51,12 @@
                         <button class="btn btn-primary" id="create-job-btn">
                             <i class="fas fa-plus"></i> Single Article
                         </button>
+                        <button class="btn btn-accent" id="create-page-campaign-btn">
+                            <i class="fas fa-copy"></i> Page Campaign
+                        </button>
+                        <button class="btn btn-success" id="create-page-btn">
+                            <i class="fas fa-file-alt"></i> Single Page
+                        </button>
                     </div>
                 </div>
                 
@@ -269,6 +275,121 @@
             <div class="job-details-content" id="job-details-content">
                 <!-- Job details will be populated here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Modal for Creating Single Pages -->
+    <div class="modal" id="create-page-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Create AI-Powered Page</h3>
+                <button class="close-btn" id="close-page-modal">&times;</button>
+            </div>
+            
+            <form id="page-form" class="page-form">
+                <div class="form-group">
+                    <label for="page-content-prompt">What type of page would you like to create?</label>
+                    <textarea id="page-content-prompt" name="contentPrompt" rows="6" 
+                              placeholder="Describe your page idea... For example:&#10;&#10;• Create a FAQ page about AI services&#10;• Build a comparison page for different hosting plans&#10;• Generate a features page for our software&#10;• Create an About Us page for a tech startup&#10;• Build a pricing comparison table&#10;• Create a contact page with service details&#10;&#10;The AI will automatically generate structured content, title, and relevant images!" required></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="parent-page">Parent Page (optional)</label>
+                        <select id="parent-page" name="parentPageId">
+                            <option value="">-- Top Level Page --</option>
+                            <!-- Will be populated with existing pages -->
+                        </select>
+                        <small>Choose a parent page to create a sub-page</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="page-publish-delay">Publish Delay (minutes)</label>
+                        <input type="number" id="page-publish-delay" name="publishDelay" value="0" min="0" max="1440" />
+                        <small>Pages typically publish immediately (0 = instant)</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-page">Cancel</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-file-alt"></i> Create Page
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Creating Page Campaigns -->
+    <div class="modal" id="create-page-campaign-modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3><i class="fas fa-copy"></i> Create Page Campaign</h3>
+                <button class="close-btn" id="close-page-campaign-modal">&times;</button>
+            </div>
+            
+            <form id="page-campaign-form" class="page-campaign-form">
+                <div class="form-group">
+                    <label for="page-campaign-name">Page Campaign Name</label>
+                    <input type="text" id="page-campaign-name" name="name" placeholder="e.g., Product Pages Q1 2024" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="page-campaign-prompts">Page Prompts (one per line)</label>
+                    <textarea id="page-campaign-prompts" name="prompts" rows="12" 
+                              placeholder="Enter your page prompts, one per line:&#10;&#10;Create a FAQ page about our AI services&#10;Build a pricing comparison page&#10;Generate a features overview page&#10;Create an About Us page&#10;Build a contact page with service details&#10;Create a privacy policy page&#10;Generate a terms of service page&#10;Build a support page with common issues&#10;Create a testimonials page&#10;Generate a case studies page" required></textarea>
+                    <small>Each line will become a separate page prompt</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="page-campaign-frequency">Publishing Frequency</label>
+                        <select id="page-campaign-frequency" name="frequency" required>
+                            <option value="daily">Daily</option>
+                            <option value="hourly">Hourly</option>
+                            <option value="custom">Custom (Cron)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="pages-per-day-group">
+                        <label for="pages-per-day">Pages Per Day</label>
+                        <input type="number" id="pages-per-day" name="pagesPerDay" value="1" min="1" max="12" />
+                        <small>How many pages to publish daily</small>
+                    </div>
+                </div>
+
+                <div class="form-group" id="page-custom-cron-group" style="display: none;">
+                    <label for="page-custom-cron">Custom Cron Expression</label>
+                    <input type="text" id="page-custom-cron" name="customCron" placeholder="0 10 * * 1 (every Monday at 10 AM)" />
+                    <small>Use cron format for custom scheduling</small>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="page-parent-page">Parent Page (optional)</label>
+                        <select id="page-parent-page" name="parentPageId">
+                            <option value="">-- Top Level Pages --</option>
+                            <!-- Will be populated with existing pages -->
+                        </select>
+                        <small>All pages in this campaign will be sub-pages</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="page-campaign-looping">
+                            <input type="checkbox" id="page-campaign-looping" name="isLooping" checked />
+                            Loop prompts indefinitely
+                        </label>
+                        <small>Restart from first prompt when all are used</small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-page-campaign">Cancel</button>
+                    <button type="submit" class="btn btn-accent">
+                        <i class="fas fa-copy"></i> Create Page Campaign
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
