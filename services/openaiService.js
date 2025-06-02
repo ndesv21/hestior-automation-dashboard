@@ -118,10 +118,47 @@ Write comprehensive articles that are at least 800-1200 words.`
         quality: "medium",
       });
 
-      return response.data[0].url;
+      console.log('Image generation response:', JSON.stringify(response, null, 2));
+      
+      // Handle different possible response formats for gpt-image-1
+      let imageUrl = null;
+      
+      if (response.data && response.data[0]) {
+        // Try different possible URL locations
+        imageUrl = response.data[0].url || 
+                  response.data[0].image_url || 
+                  response.data[0].revised_prompt_url ||
+                  response.data[0].b64_json;
+      }
+      
+      // If we got base64 data, we need to handle it differently
+      if (imageUrl && imageUrl.startsWith('data:image')) {
+        console.log('Received base64 image data, converting...');
+        return imageUrl; // Return base64 for now, we'll handle conversion in WordPress service
+      }
+      
+      // Validate URL format
+      if (!imageUrl || !this.isValidUrl(imageUrl)) {
+        console.error('Invalid or missing image URL:', imageUrl);
+        console.error('Full response:', JSON.stringify(response, null, 2));
+        throw new Error('Invalid image URL received from API');
+      }
+      
+      console.log('Generated image URL:', imageUrl);
+      return imageUrl;
     } catch (error) {
       console.error('Error generating image:', error);
       throw new Error(`Failed to generate image: ${error.message}`);
+    }
+  }
+
+  // Helper function to validate URLs
+  isValidUrl(string) {
+    try {
+      const url = new URL(string);
+      return url.protocol === 'http:' || url.protocol === 'https:' || string.startsWith('data:image');
+    } catch (_) {
+      return false;
     }
   }
 

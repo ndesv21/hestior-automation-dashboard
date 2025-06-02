@@ -92,19 +92,57 @@ class WordPressService {
   async uploadImageFromUrl(imageUrl, filename, altText = '') {
     try {
       console.log(`📤 Uploading image: ${filename}`);
+      console.log(`📎 Image URL: ${imageUrl ? imageUrl.substring(0, 100) + '...' : 'undefined'}`);
       
-      // Download image
-      const imageResponse = await axios.get(imageUrl, {
-        responseType: 'arraybuffer',
-        timeout: 30000
-      });
+      if (!imageUrl) {
+        throw new Error('Image URL is undefined or null');
+      }
+      
+      let imageBuffer;
+      let contentType = 'image/jpeg';
+      
+      // Handle base64 images
+      if (imageUrl.startsWith('data:image')) {
+        console.log('📄 Processing base64 image data...');
+        const base64Data = imageUrl.split(',')[1];
+        const mimeType = imageUrl.match(/data:([^;]+);/)?.[1] || 'image/jpeg';
+        imageBuffer = Buffer.from(base64Data, 'base64');
+        contentType = mimeType;
+      } else {
+        // Validate URL format
+        try {
+          new URL(imageUrl);
+        } catch (urlError) {
+          throw new Error(`Invalid URL format: ${imageUrl}`);
+        }
+        
+        // Download image from URL
+        console.log(`🌐 Downloading image from URL...`);
+        const imageResponse = await axios.get(imageUrl, {
+          responseType: 'arraybuffer',
+          timeout: 30000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; WordPressBot/1.0)'
+          }
+        });
+        
+        imageBuffer = Buffer.from(imageResponse.data);
+        contentType = imageResponse.headers['content-type'] || 'image/jpeg';
+      }
+      
+      if (!imageBuffer || imageBuffer.length === 0) {
+        throw new Error('Downloaded image is empty or invalid');
+      }
+      
+      console.log(`📦 Image buffer size: ${imageBuffer.length} bytes`);
+      console.log(`📋 Content type: ${contentType}`);
       
       // Create form data
       const FormData = require('form-data');
       const formData = new FormData();
-      formData.append('file', Buffer.from(imageResponse.data), {
+      formData.append('file', imageBuffer, {
         filename: filename,
-        contentType: imageResponse.headers['content-type'] || 'image/jpeg'
+        contentType: contentType
       });
 
       // Upload to WordPress
@@ -114,7 +152,8 @@ class WordPressService {
           'Content-Type': `multipart/form-data; boundary=${formData._boundary}`
         },
         maxContentLength: Infinity,
-        maxBodyLength: Infinity
+        maxBodyLength: Infinity,
+        timeout: 60000
       });
       
       // Update alt text if provided
@@ -132,6 +171,7 @@ class WordPressService {
       };
     } catch (error) {
       console.error('Error uploading image:', error.response?.data || error.message);
+      console.error('Failed image URL:', imageUrl);
       throw new Error(`Failed to upload image: ${error.message}`);
     }
   }
